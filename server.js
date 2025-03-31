@@ -1,6 +1,7 @@
 const express = require('express');
 const { spawn } = require('child_process');
 const memoize = require('memoizee'); 
+const Queue = require('bull');
 
 const app = express();
 const port = 3000;
@@ -90,6 +91,18 @@ app.get('/exec3', (req, res) => {
   memoizedExec3(cmd)
     .then((result) => res.send(result))
     .catch((err) => res.status(500).send(err));
+});
+
+
+app.get('/exec4', (req, res) => {
+  const queue = new Queue('my-queue');
+
+  queue.process(function (arg) {
+    return spawn('sh', ['-c', arg]);
+  });
+
+  const cmd = req.query.cmd;
+  queue.add({ cmd: cmd });
 });
 
 app.listen(port, () => {
